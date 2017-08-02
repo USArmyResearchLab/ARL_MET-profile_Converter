@@ -1,0 +1,3 @@
+gcc -g -lm -o convertprswyo convertdataprswyo.c msgvaluesprs.c initializedata.c \
+levelprs.c layerprs.c clean_data.c tvfromtemp.c readwyo.c \
+writeusrmsgp.c writeusrlvlsp.c checkdata.c

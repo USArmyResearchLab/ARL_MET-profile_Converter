@@ -1,0 +1,3 @@
+gcc -g -lm -o convertnoaa convertdatawyo.c msgvaluesnoaa.c initializedata.c \
+level.c layer.c clean_datanoaa.c tvfromtemptd.c prscomp.c readnoaa.c \
+writeusrmsg.c writeusrlvls.c checkdatanoaa.c

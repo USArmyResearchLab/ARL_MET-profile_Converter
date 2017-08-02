@@ -1,0 +1,3 @@
+gcc -g -lm -o convertwyo convertdatawyo.c msgvalues.c initializedata.c \
+level.c layer.c clean_data.c tvfromtemp.c prscomp.c readwyo.c \
+writeusrmsg.c writeusrlvls.c checkdata.c

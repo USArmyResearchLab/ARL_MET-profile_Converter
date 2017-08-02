@@ -1,0 +1,3 @@
+gcc -g -lm -o convertwrf convertdatawrf.c msgvalues.c initializedata.c \
+level.c layer.c clean_data.c tvfromtemp.c prscomp.c readwrf.c \
+writeusrmsg_wrf.c writeusrlvls_wrf.c checkdata.c 
