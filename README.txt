@@ -1,0 +1,1 @@
+Please read either the README_License_UserGuide.txt or README_License_UserGuide.htm file for information on the ARL_MET-profile_Converter software.
