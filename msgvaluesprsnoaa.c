@@ -15,7 +15,7 @@ ________________________________________________________________________
    limitations under the License. 
 _________________________________________________________________________
    
-  This program computes level and layer values for a user defined pressure level profile using
+  This program computes level and layer values for a user defined pressure level structure using
   data from the NOAA archive.                                                             
 */
 
@@ -28,6 +28,7 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
    int size, msize, tsize, wsize;  /*tsize is for temperature, wsize for wind */
    float pmin, dir;               
    float tv, tv0, z, z0, p, p0;
+   float t, td;
 
    struct temporary *soundt;  /* use in level and layer functions */
    struct temporary *soundw;
@@ -88,7 +89,7 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
 
 /* Parameters for level and layer values. ****************/
 
-   msg->nht = mlevel->nht - 1;  /* Number of layer values are one less than level values. */
+   msg->nht = mlevel->nht - 1;  /* number of layer values one less than level values */
    size = snd->nht;
    msize = mlevel->nht;
    pmin = log(snd->level[size-1].prs) - 0.0001;
@@ -102,7 +103,7 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
      {
        if(snd->level[i].tmp != ERROR && snd->level[i].dew != ERROR)
          {
-           snd->level[i].tmp += 273.16;  /*Change to K from C.*/
+           snd->level[i].tmp += 273.16;  /*Change to K from C.  Need to do here vs. in main or read routines.*/
            snd->level[i].dew += 273.16;  /*Change to K from C.*/
            snd->level[i].vtmp = tvfromtemptd(snd->level[i].tmp, snd->level[i].prs, snd->level[i].dew);
          }
@@ -115,7 +116,7 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
        if(snd->level[i].tmp != ERROR && snd->level[i].dew != ERROR)
          {
            j++;
-           soundt->p[j] = snd->level[i].prs;
+           soundt->p[j] = log(snd->level[i].prs);
            soundt->t[j] = snd->level[i].tmp;
            soundt->tv[j] = snd->level[i].vtmp;
            soundt->h[j] = snd->level[i].hgt;
@@ -128,7 +129,7 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
 
    for (i=0;i<msize;i++)
      {
-        leveltempt->p[i] = mlevel->level[i].prs;
+        leveltempt->p[i] = log(mlevel->level[i].prs);
         layertempt->p[i] = leveltempt->p[i];
      }
 
@@ -162,7 +163,7 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
             soundw->v[j] = sin(dir) * snd->level[i].spd;
         
             soundw->h[j] = snd->level[i].hgt;
-            soundw->p[j] = snd->level[i].prs;
+            soundw->p[j] = log(snd->level[i].prs);
          }
      }
    wsize = j; /*printf("wsize = %4d\n\n", wsize);*/ /*exit(0);*/
@@ -170,7 +171,7 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
 
    for (i=0;i<msize;i++)
      {
-        leveltempw->p[i] = mlevel->level[i].prs;
+        leveltempw->p[i] = log(mlevel->level[i].prs);
         layertempw->p[i] = leveltempw->p[i];
      }
 
@@ -183,6 +184,9 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
 
    for(i=0;i<msize;i++)
      {
+       mlevel->level[i].u = leveltempw->u[i];
+       mlevel->level[i].v = leveltempw->v[i];
+       
        mlevel->level[i].dir = (2*M_PI - atan2(leveltempw->u[i], -leveltempw->v[i]))*180/M_PI;
        if(mlevel->level[i].dir > 360)
          mlevel->level[i].dir -= 360;
@@ -231,20 +235,30 @@ int msgvaluesprs(struct sound *snd, struct sound *msg, struct sound *mlevel)
         mlevel->level[i].tmp = leveltempt->t[i];
         mlevel->level[i].vtmp = leveltempt->tv[i];
         mlevel->level[i].dew = leveltempt->dew[i];
+        /*For some applications need RH vs. dewpoint. Use ratio vapor pres/saturation vapor pres.*/
+        td = mlevel->level[i].dew;
+        t = mlevel->level[i].tmp;
+        mlevel->level[i].hum = 100*exp(17.27*(td-273.16)/(td-35.86))/exp(17.27*(t-273.16)/(t-35.86));
      }
  
    msg->level[0].hgt = snd->level[0].hgt;
    msg->level[0].tmp = snd->level[0].tmp;        /* msg values (= surface + layers) */
    msg->level[0].vtmp = snd->level[0].vtmp;
    msg->level[0].dew = snd->level[0].dew;
+   td = snd->level[0].dew;
+   t = snd->level[0].tmp;
+   msg->level[0].hum = 100*exp(17.27*(td-273.16)/(td-35.86))/exp(17.27*(t-273.16)/(t-35.86));
+
    for (i=1;i<msize;i++)
      {
         msg->level[i].hgt = layertempt->h[i-1];  
         msg->level[i].tmp = layertempt->t[i-1];
         msg->level[i].vtmp = layertempt->tv[i-1];
-        msg->level[i].hum = layertempt->hum[i-1];
+        msg->level[i].dew = layertempt->dew[i-1];
+        td = msg->level[i].dew;
+        t =  msg->level[i].tmp;
+        msg->level[i].hum = 100*exp(17.27*(td-273.16)/(td-35.86))/exp(17.27*(t-273.16)/(t-35.86));
      } 
-
 
    /* Load in site information (date, time, lat, lon, etc.). ######## */
 
